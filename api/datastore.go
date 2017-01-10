@@ -66,4 +66,33 @@ func init() {
 		fmt.Fprintf(w, "%s %s \n", p.Name, p.Gender)
 	})
 
+	// カーソル
+	http.HandleFunc("/d/get3", func(w http.ResponseWriter, r *http.Request) {
+		ctx := appengine.NewContext(r)
+		query := datastore.NewQuery(Table)
+		cursor, err := datastore.DecodeCursor(string(cursor.Value))
+		if err == nil {
+			query = query.Start(cursor)
+		}
+		var p Person
+		t := query.Run(c)
+		for {
+			var p Person
+			_, err := t.Next(&p) // 取得する結果のKeyを返す
+			if err == datastore.Done {
+				break
+			}
+			if err != nil {
+				log.Errorf("fetching next Person: %v", err)
+				break
+			}
+			fmt.Fprintf(w, "%v\n", p)
+		}
+		cursor, err := t.Cursor() // イテレーターの現在位置を表すカーソル
+		if err != nil {
+			fmt.Fprintf(w, "%s", err.Error())
+			return
+		}
+		w.Write([]byte([]byte(cursor.String())))
+	})
 }
